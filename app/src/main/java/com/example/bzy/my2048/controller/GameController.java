@@ -1,4 +1,4 @@
-package com.example.bzy.my2048;
+package com.example.bzy.my2048.controller;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -10,96 +10,95 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
-import android.widget.TextView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
-public class GameController implements View.OnTouchListener, View.OnClickListener {
-    private boolean DBG = false;
-    private int[] src =
+import com.example.bzy.my2048.MainActivity;
+import com.example.bzy.my2048.R;
+import com.example.bzy.my2048.controller.BlocksController;
+import com.example.bzy.my2048.sounds.GlobalSoundManager;
+import com.example.bzy.my2048.sounds.SoundType;
+import com.example.bzy.my2048.utils.Constants;
+import com.example.bzy.my2048.utils.Direction;
+import com.example.bzy.my2048.utils.LogUtils;
+import com.example.bzy.my2048.view.GridTableView;
+import com.example.bzy.my2048.view.MyDialog;
+
+public class GameController implements View.OnClickListener,View.OnTouchListener{
+
+    private static GameController sInstance = null;
+    private final int[] src =
             {2, 8, 4, 2,
                     4096, 4, 8, 4,
                     4, 8, 4, 8,
                     8, 4, 2048, 1024};
     private BlocksController bc;
-    private FrameLayout game_layout;
+    private GridTableView gridView;
     private Context context;
     private int mMaxScore;
     private String mPlayer;
-    SharedPreferences mPreferences;
-    TextView tv_score;
-    TextView tv_maxScore;
-    TextView tv_playerName;
-    Button bt_ok;
-    EditText et;
-    MyDialog dialog;
+    private SharedPreferences mPreferences;
+    private Button bt_ok;
+    private EditText et;
+    private MyDialog dialog;
+    private LinearLayout mControlPad;
 
-    GameController(Context context, View v1, View v2) {
+    private Button startButton;
+
+    private GameController(Context context) {
         this.context = context;
-        Button bt_start = v1.findViewById(R.id.bt_start);
-        Button bt_save = v1.findViewById(R.id.bt_save);
-        Button bt_load = v1.findViewById(R.id.bt_load);
-
-        tv_score = v1.findViewById(R.id.id_score);
-        tv_maxScore = v1.findViewById(R.id.id_highScore);
-        tv_playerName = v1.findViewById(R.id.player_name);
-
         dialog = new MyDialog(context);
 
+        mControlPad = ((MainActivity) context).findViewById(R.id.control_pad);
+        gridView = ((MainActivity) context).findViewById(Constants.Id.ID_GRID_VIEW);
+        LogUtils.log("GameController gridView = " + gridView + " , context = " + context);
 
-        game_layout = (FrameLayout) v2;
-        bt_start.setOnClickListener(this);
-        bt_save.setOnClickListener(this);
-        bt_load.setOnClickListener(this);
+        startButton = mControlPad.findViewById(R.id.bt_start);
+        startButton.setOnClickListener(this);
 
         mPreferences = context.getSharedPreferences("bzy", Context.MODE_PRIVATE);
         mMaxScore = mPreferences.getInt("max_score", 0);
         mPlayer = mPreferences.getString("player_name", "无");
-
-        tv_maxScore.setText("最高分：" + mMaxScore);
-        tv_playerName.setText("保持者：" + mPlayer);
     }
 
-    //开始游戏，随机生成2个数字块
-    @SuppressLint("ClickableViewAccessibility")
-    private void startGame(boolean isLoadGame) {
-        game_layout.setOnTouchListener(this);
+    public static GameController getsInstance(Context context) {
+        if (sInstance == null) {
+            sInstance = new GameController(context);
+        }
+        return sInstance;
+    }
 
+    private void startGame(boolean isLoadGame) {
+        gridView.setOnTouchListener(this);
         if (isLoadGame) {
             return;
         }
 
         if (bc == null) {
-            bc = new BlocksController(context, game_layout, this);
+            bc = BlocksController.getInstance(context);
         } else {
             bc.remove_all_blocks();
             bc.setScore(0);
         }
 
-        if (DBG) {
+        if (LogUtils.DBG) {
             bc.createForTest(src);
         } else {
             bc.create(2);
         }
         updateScore(bc.getScore() + "");
+        GlobalSoundManager.getInstance().playSound(SoundType.START);
     }
 
-    //保存游戏
     private void saveGame() {
 
     }
 
-    //载入游戏
     private void loadGame() {
-        if (false)
-            startGame(true);
-        else
-            Toast.makeText(context, "没有保存的进度", Toast.LENGTH_SHORT).show();
+
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     private void stopGame() {
-
         if (bc.getScore() >= mMaxScore) {
             dialog.show();
             et = dialog.findViewById(R.id.id_et);
@@ -126,15 +125,31 @@ public class GameController implements View.OnTouchListener, View.OnClickListene
                 }
             });
         }
-        game_layout.setOnTouchListener(null);
+        gridView.setOnTouchListener(null);
     }
 
 
-    private float x1;
-    private float y1;
 
-    @SuppressLint("ClickableViewAccessibility")
+
     @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.bt_start:
+                startGame(false);
+                break;
+            case R.id.bt_save:
+                saveGame();
+                break;
+            case R.id.bt_load:
+                loadGame();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private float x1 = 0;
+    private float y1 = 0;
     public boolean onTouch(View v, MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
@@ -166,8 +181,8 @@ public class GameController implements View.OnTouchListener, View.OnClickListene
                 bc.handleMove(direction);
                 if (bc.empty_count == 0) {
                     if (!bc.gameIsOver()) {
-                        stopGame();
-                        Toast.makeText(context, "Game Over!", Toast.LENGTH_SHORT).show();
+//                        stopGame();
+//                        Toast.makeText(context, "Game Over!", Toast.LENGTH_SHORT).show();
 
                     }
                 }
@@ -176,25 +191,7 @@ public class GameController implements View.OnTouchListener, View.OnClickListene
         return true;
     }
 
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.bt_start:
-                startGame(false);
-                break;
-            case R.id.bt_save:
-                saveGame();
-                break;
-            case R.id.bt_load:
-                loadGame();
-                break;
-            default:
-                break;
-        }
-    }
-
     public void updateScore(String score) {
-        tv_score.setText("当前：" + score);
     }
 
     Handler handler = new Handler() {
@@ -204,8 +201,6 @@ public class GameController implements View.OnTouchListener, View.OnClickListene
                 Bundle data = msg.getData();
                 String playerName = data.getString("player_name", "");
                 int highScore = data.getInt("max_score", 0);
-                tv_maxScore.setText("最高分：" + highScore);
-                tv_playerName.setText("保持者：" + playerName);
             }
         }
     };

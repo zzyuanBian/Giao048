@@ -1,32 +1,37 @@
-package com.example.bzy.my2048;
+package com.example.bzy.my2048.controller;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
-import java.util.Arrays;
+import com.example.bzy.my2048.MainActivity;
+import com.example.bzy.my2048.sounds.GlobalSoundManager;
+import com.example.bzy.my2048.sounds.SoundType;
+import com.example.bzy.my2048.utils.Constants;
+import com.example.bzy.my2048.utils.DeviceInfo;
+import com.example.bzy.my2048.utils.Direction;
+import com.example.bzy.my2048.utils.LogUtils;
+import com.example.bzy.my2048.view.BlockView;
+import com.example.bzy.my2048.view.GridTableView;
+
 
 public class BlocksController {
     int[] data = new int[16];
 
-    int empty_count = 16;
-    private FrameLayout game_layout;
+    public int empty_count = 16;
+    private GridTableView gridView;
     private Context context;
-    private int WIDTH = (int) Util.WIDTH;
+    private int WIDTH = (int) DeviceInfo.getsInstance().getWidth();
     private int[][][] positions;
     private BlockView[] blockViews = new BlockView[16];
     private int steps_all = 0;
     private int mScore;
-    private GameController gc;
 
-    BlocksController(Context context, View v, GameController controller) {
-        gc = controller;
+    private static  BlocksController sInstance;
+
+    private BlocksController(Context context) {
         this.context = context;
-        game_layout = (FrameLayout) v;
         for (int i = 0; i < 16; i++) {
             data[i] = 0;
         }
@@ -38,7 +43,18 @@ public class BlocksController {
                 {{0, WIDTH * 3 / 4}, {WIDTH / 4, WIDTH * 3 / 4}, {WIDTH / 2, WIDTH * 3 / 4}, {WIDTH * 3 / 4, WIDTH * 3 / 4}}
         };
 
+        gridView = ((MainActivity)context).findViewById(Constants.Id.ID_GRID_VIEW);
+        LogUtils.log("BlocksController gridView = " + gridView + " , context = " + context);
     }
+
+    public static BlocksController getInstance(Context context) {
+        if (sInstance == null) {
+            sInstance = new BlocksController(context);
+        }
+        return sInstance;
+    }
+
+
 
 
     public void handleMove(int dir) {
@@ -54,6 +70,7 @@ public class BlocksController {
             default:
                 break;
         }
+        GlobalSoundManager.getInstance().playSound(SoundType.MOVE);
     }
 
 
@@ -250,6 +267,7 @@ public class BlocksController {
             } else {
                 oneMergeDown(pre, line);
             }
+
         } else {
             if (dir == Direction.LEFT) {
                 twoMergeLeft(pre, line);
@@ -261,9 +279,6 @@ public class BlocksController {
                 twoMergeDown(pre, line);
             }
         }
-
-        gc.updateScore(mScore + "");
-
     }
 
     public boolean gameIsOver() {
@@ -612,7 +627,7 @@ public class BlocksController {
         }
         bv.setPadding(15, 15, 15, 15);
 
-        game_layout.addView(bv);
+        gridView.addView(bv);
         blockViews[position] = bv;
         data[position] = num;
         empty_count--;
@@ -622,7 +637,7 @@ public class BlocksController {
 
     public void remove_blocks(int position) {
         data[position] = 0;
-        game_layout.removeView(blockViews[position]);
+        gridView.removeView(blockViews[position]);
         blockViews[position] = null;
         empty_count++;
     }

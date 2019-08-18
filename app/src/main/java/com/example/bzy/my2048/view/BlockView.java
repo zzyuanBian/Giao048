@@ -1,4 +1,4 @@
-package com.example.bzy.my2048;
+package com.example.bzy.my2048.view;
 
 import android.content.Context;
 import android.graphics.Canvas;

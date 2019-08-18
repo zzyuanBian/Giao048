@@ -1,8 +1,10 @@
-package com.example.bzy.my2048;
+package com.example.bzy.my2048.view;
 
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
+
+import com.example.bzy.my2048.R;
 
 public class MyDialog extends Dialog {
 
@@ -16,7 +18,5 @@ public class MyDialog extends Dialog {
         setContentView(R.layout.layout_dialog);
         setCanceledOnTouchOutside(false);
         setCancelable(true);
-
-
     }
 }
